@@ -6,7 +6,7 @@ project:
 paths:
   # Ruta de entrada con las imágenes originales de UTKFace.
   # Cambie solo este valor si el dataset vive fuera del repositorio.
-  original_utkface_dir: data/raw/UTKFace
+  original_utkface_dir: /srv/datasets/imagenes/UTKFace/utkface_aligned_cropped/UTKFace
   processed_dir: data/processed
   metadata_dir: data/metadata
   generated_dir: data/generated
