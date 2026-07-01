@@ -1,32 +1,4 @@
-project:
-  name: LAB04-DL-2026-01
-  seed: 42
-  device: auto
-
 paths:
   # Ruta de entrada con las imágenes originales de UTKFace.
   # Cambie solo este valor si el dataset vive fuera del repositorio.
   original_utkface_dir: /srv/datasets/imagenes/UTKFace/utkface_aligned_cropped/UTKFace
-  processed_dir: data/processed
-  metadata_dir: data/metadata
-  generated_dir: data/generated
-  outputs_dir: outputs
-  models_dir: outputs/models
-  reports_dir: outputs/reports
-  figures_dir: outputs/figures
-  logs_dir: outputs/logs
-  metrics_dir: outputs/metrics
-
-preprocessing:
-  image_size:
-    - 128
-    - 128
-  color_space: RGB
-  normalize: true
-  channels: 3
-
-training:
-  epochs: 30
-  batch_size: 64
-  learning_rate: 0.001
-

@@ -3,28 +3,25 @@ project:
   seed: 42
   device: auto
 
+generation:
+  seed: 42
+  cae_seed: 42
+  vae_seed: 42
+  gan_seed: 42
+
 paths:
   original_utkface_dir: data/raw/UTKFace
-  processed_dir: data/processed
   metadata_dir: data/metadata
   generated_dir: data/generated
-  outputs_dir: outputs
   models_dir: outputs/models
   reports_dir: outputs/reports
-  figures_dir: outputs/figures
-  logs_dir: outputs/logs
   metrics_dir: outputs/metrics
 
 dataset:
-  name: UTKFace
   image_extensions:
     - .jpg
     - .jpeg
     - .png
-  filename_format: age_gender_race_date
-  use_race_label: false
-  task_gender: true
-  task_age: true
   max_images: 0
 
 preprocessing:
@@ -33,7 +30,6 @@ preprocessing:
     - 128
   color_space: RGB
   normalize: true
-  channels: 3
 
 age:
   prediction_mode: regression
@@ -74,23 +70,14 @@ traditional_augmentation:
   gaussian_blur: false
 
 cae:
-  enabled: true
-  train_by:
-    - age_group
-    - gender
   latent_dim: 128
   epochs: 30
   batch_size: 64
   learning_rate: 0.001
   noise_std: 0.10
   samples_per_group: 500
-  reconstruction_loss: mse
 
 vae:
-  enabled: true
-  train_by:
-    - age_group
-    - gender
   latent_dim: 128
   beta: 1.0
   epochs: 50
@@ -100,55 +87,30 @@ vae:
   synthetic_age_label_strategy: group_midpoint
 
 gan:
-  enabled: true
-  model_type: dcgan
-  train_by:
-    - age_group
-    - gender
   latent_dim: 100
   epochs: 100
   batch_size: 64
   learning_rate_generator: 0.0002
   learning_rate_discriminator: 0.0002
   beta1: 0.5
-  discriminator_steps: 1
   samples_per_group: 500
   synthetic_age_label_strategy: group_midpoint
 
 multitask_model:
-  backbone: simple_cnn
-  pretrained: false
   dropout: 0.3
   hidden_dim: 256
   gender_output_classes: 2
   age_output_dim: 1
 
 losses:
-  gender_loss: cross_entropy
-  age_loss: smooth_l1
   lambda_gender: 1.0
   lambda_age: 1.0
 
 training:
   epochs: 30
   batch_size: 64
-  optimizer: adam
   learning_rate: 0.001
   weight_decay: 0.0001
   early_stopping: true
   patience: 8
   num_workers: 0
-
-metrics:
-  gender:
-    - accuracy
-    - precision
-    - recall
-    - f1
-  age:
-    - mae
-    - rmse
-  global:
-    - total_loss
-    - gender_loss
-    - age_loss

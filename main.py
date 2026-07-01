@@ -39,9 +39,18 @@ def build_parser() -> argparse.ArgumentParser:
 
     subparsers.add_parser("list", help="Lista los experimentos definidos en YAML.")
     subparsers.add_parser("prepare", help="Prepara metadatos y splits de UTKFace.")
-    subparsers.add_parser("minimal", help="Ejecuta el flujo mínimo del laboratorio.")
-    subparsers.add_parser("extended", help="Ejecuta la extensión VAE/GAN del laboratorio.")
-    subparsers.add_parser("all", help="Ejecuta flujo mínimo y extendido.")
+    minimal_parser = subparsers.add_parser(
+        "minimal",
+        help="Ejecuta el flujo mínimo del laboratorio.",
+    )
+    add_generation_args(minimal_parser)
+    extended_parser = subparsers.add_parser(
+        "extended",
+        help="Ejecuta la extensión VAE/GAN del laboratorio.",
+    )
+    add_generation_args(extended_parser)
+    all_parser = subparsers.add_parser("all", help="Ejecuta flujo mínimo y extendido.")
+    add_generation_args(all_parser)
     sweep_parser = subparsers.add_parser(
         "sweep",
         help="Ejecuta un barrido simple de hiperparámetros definido en YAML.",
@@ -73,11 +82,36 @@ def build_parser() -> argparse.ArgumentParser:
         help="Nombre de experimento. Si se omite, intenta evaluar todos.",
     )
 
-    subparsers.add_parser("cae", help="Entrena CAE y genera imágenes CAE.")
-    subparsers.add_parser("vae", help="Entrena VAE y genera imágenes VAE.")
-    subparsers.add_parser("gan", help="Entrena GAN y genera imágenes GAN.")
+    cae_parser = subparsers.add_parser("cae", help="Entrena CAE y genera imágenes CAE.")
+    add_generation_args(cae_parser)
+    vae_parser = subparsers.add_parser("vae", help="Entrena VAE y genera imágenes VAE.")
+    add_generation_args(vae_parser)
+    gan_parser = subparsers.add_parser("gan", help="Entrena GAN y genera imágenes GAN.")
+    add_generation_args(gan_parser)
 
     return parser
+
+
+def add_generation_args(parser: argparse.ArgumentParser) -> None:
+    """Agrega opciones comunes para imágenes sintéticas."""
+
+    generation_group = parser.add_mutually_exclusive_group()
+    generation_group.add_argument(
+        "--use-existing-generated",
+        action="store_true",
+        help="Usa imágenes sintéticas existentes y falla si faltan.",
+    )
+    generation_group.add_argument(
+        "--force-generate",
+        action="store_true",
+        help="Regenera imágenes sintéticas aunque ya existan.",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Semilla para generación de imágenes sintéticas.",
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -318,24 +352,64 @@ def write_sweep_run_files(
 
 
 def run_cae(args: argparse.Namespace) -> int:
-    first = run_script("scripts/02_train_cae.py", ["--config", args.config], dry_run=args.dry_run)
-    if first:
-        return first
-    return run_script("scripts/03_generate_cae_faces.py", ["--config", args.config], dry_run=args.dry_run)
+    if not args.use_existing_generated:
+        first = run_script(
+            "scripts/02_train_cae.py",
+            ["--config", args.config],
+            dry_run=args.dry_run,
+        )
+        if first:
+            return first
+    return run_script(
+        "scripts/03_generate_cae_faces.py",
+        ["--config", args.config, *generation_script_args(args)],
+        dry_run=args.dry_run,
+    )
 
 
 def run_vae(args: argparse.Namespace) -> int:
-    first = run_script("scripts/04_train_vae.py", ["--config", args.config], dry_run=args.dry_run)
-    if first:
-        return first
-    return run_script("scripts/05_generate_vae_faces.py", ["--config", args.config], dry_run=args.dry_run)
+    if not args.use_existing_generated:
+        first = run_script(
+            "scripts/04_train_vae.py",
+            ["--config", args.config],
+            dry_run=args.dry_run,
+        )
+        if first:
+            return first
+    return run_script(
+        "scripts/05_generate_vae_faces.py",
+        ["--config", args.config, *generation_script_args(args)],
+        dry_run=args.dry_run,
+    )
 
 
 def run_gan(args: argparse.Namespace) -> int:
-    first = run_script("scripts/06_train_gan.py", ["--config", args.config], dry_run=args.dry_run)
-    if first:
-        return first
-    return run_script("scripts/07_generate_gan_faces.py", ["--config", args.config], dry_run=args.dry_run)
+    if not args.use_existing_generated:
+        first = run_script(
+            "scripts/06_train_gan.py",
+            ["--config", args.config],
+            dry_run=args.dry_run,
+        )
+        if first:
+            return first
+    return run_script(
+        "scripts/07_generate_gan_faces.py",
+        ["--config", args.config, *generation_script_args(args)],
+        dry_run=args.dry_run,
+    )
+
+
+def generation_script_args(args: argparse.Namespace) -> list[str]:
+    """Construye flags para scripts de generación."""
+
+    command_args: list[str] = []
+    if args.use_existing_generated:
+        command_args.append("--use-existing")
+    if args.force_generate:
+        command_args.append("--force-generate")
+    if args.seed is not None:
+        command_args.extend(["--seed", str(args.seed)])
+    return command_args
 
 
 def run_minimal(args: argparse.Namespace) -> int:

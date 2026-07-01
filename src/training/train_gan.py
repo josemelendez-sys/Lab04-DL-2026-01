@@ -24,7 +24,13 @@ def train_gan(generator, discriminator, loader, config: dict, device, output_dir
         betas=(float(config["gan"].get("beta1", 0.5)), 0.999),
     )
 
-    for _ in range(int(config["gan"]["epochs"])):
+    total_epochs = int(config["gan"]["epochs"])
+    for epoch in range(1, total_epochs + 1):
+        total_d_loss = 0.0
+        total_g_loss = 0.0
+        real_correct = 0
+        fake_correct = 0
+        sample_count = 0
         for batch in loader:
             real = batch["image"].to(device)
             batch_size = real.size(0)
@@ -34,9 +40,9 @@ def train_gan(generator, discriminator, loader, config: dict, device, output_dir
             opt_d.zero_grad()
             noise = torch.randn(batch_size, latent_dim, 1, 1, device=device)
             fake = generator(noise).detach()
-            d_loss = criterion(discriminator(real), real_targets) + criterion(
-                discriminator(fake), fake_targets
-            )
+            real_logits = discriminator(real)
+            fake_logits = discriminator(fake)
+            d_loss = criterion(real_logits, real_targets) + criterion(fake_logits, fake_targets)
             d_loss.backward()
             opt_d.step()
 
@@ -47,10 +53,26 @@ def train_gan(generator, discriminator, loader, config: dict, device, output_dir
             g_loss.backward()
             opt_g.step()
 
+            sample_count += batch_size
+            total_d_loss += d_loss.item() * batch_size
+            total_g_loss += g_loss.item() * batch_size
+            real_correct += (real_logits >= 0).sum().item()
+            fake_correct += (fake_logits < 0).sum().item()
+
+        if sample_count == 0:
+            raise RuntimeError("El DataLoader no contiene muestras.")
+        print(
+            f"[GAN] Epoca {epoch}/{total_epochs} - "
+            f"d_loss={total_d_loss / sample_count:.6f} - "
+            f"g_loss={total_g_loss / sample_count:.6f} - "
+            f"d_real_acc={real_correct / sample_count:.6f} - "
+            f"d_fake_acc={fake_correct / sample_count:.6f}",
+            flush=True,
+        )
+
     output_dir.mkdir(parents=True, exist_ok=True)
     torch.save({"model_state_dict": generator.state_dict(), "config": config}, output_dir / "generator.pt")
     torch.save(
         {"model_state_dict": discriminator.state_dict(), "config": config},
         output_dir / "discriminator.pt",
     )
-

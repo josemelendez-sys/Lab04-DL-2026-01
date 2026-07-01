@@ -29,6 +29,20 @@ data/generated/gan/
 
 Sus metadatos se guardan en `data/metadata/` con la columna `source`, para distinguir imágenes `real`, `cae`, `vae` y `gan`.
 
+Los scripts de generación reutilizan imágenes existentes por defecto si la carpeta y su CSV de metadatos son válidos. Para exigir que ya existan imágenes generadas:
+
+```bash
+python3 scripts/03_generate_cae_faces.py --config config/path.yaml --use-existing
+python3 scripts/05_generate_vae_faces.py --config config/path.yaml --use-existing
+python3 scripts/07_generate_gan_faces.py --config config/path.yaml --use-existing
+```
+
+Para regenerar aunque ya existan, use `--force-generate`. La generación usa semillas configurables en `generation.seed`, `generation.cae_seed`, `generation.vae_seed` y `generation.gan_seed`; también se puede sobrescribir por comando:
+
+```bash
+python3 scripts/05_generate_vae_faces.py --config config/path.yaml --force-generate --seed 2026
+```
+
 ## Instalación
 
 Con Conda:
@@ -82,6 +96,12 @@ python3 scripts/08_train_multitask.py --config config/path.yaml --experiment E02
 python3 scripts/09_evaluate_experiments.py --config config/path.yaml
 ```
 
+Para usar imágenes CAE existentes y fallar si no están disponibles:
+
+```bash
+python3 main.py minimal --use-existing-generated
+```
+
 ## Flujo extendido
 
 ```bash
@@ -99,6 +119,18 @@ python3 scripts/08_train_multitask.py --config config/path.yaml --experiment E03
 python3 scripts/08_train_multitask.py --config config/path.yaml --experiment E04_real_gan
 python3 scripts/08_train_multitask.py --config config/path.yaml --experiment E05_all
 python3 scripts/09_evaluate_experiments.py --config config/path.yaml
+```
+
+Para reutilizar imágenes VAE/GAN existentes sin entrenar sus generadores:
+
+```bash
+python3 main.py extended --use-existing-generated
+```
+
+Para regenerar imágenes sintéticas con una semilla fija:
+
+```bash
+python3 main.py extended --force-generate --seed 2026
 ```
 
 ## Experimentos
