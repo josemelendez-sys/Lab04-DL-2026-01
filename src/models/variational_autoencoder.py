@@ -22,10 +22,15 @@ class VariationalAutoencoder(nn.Module):
         self.mu = nn.Linear(64 * 8 * 8, latent_dim)
         self.logvar = nn.Linear(64 * 8 * 8, latent_dim)
         self.from_latent = nn.Linear(latent_dim, 64 * 8 * 8)
+        
         self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(64, 32, 4, stride=2, padding=1),
+            nn.ConvTranspose2d(64, 64, 4, stride=2, padding=1),  # 8 -> 16
             nn.ReLU(),
-            nn.ConvTranspose2d(32, in_channels, 4, stride=2, padding=1),
+            nn.ConvTranspose2d(64, 32, 4, stride=2, padding=1),  # 16 -> 32
+            nn.ReLU(),
+            nn.ConvTranspose2d(32, 16, 4, stride=2, padding=1),  # 32 -> 64
+            nn.ReLU(),
+            nn.ConvTranspose2d(16, in_channels, 4, stride=2, padding=1), # 64 -> 128
             nn.Tanh(),
         )
 
@@ -45,4 +50,3 @@ class VariationalAutoencoder(nn.Module):
     def forward(self, images: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         mu, logvar = self.encode(images)
         return self.decode(self.reparameterize(mu, logvar)), mu, logvar
-
