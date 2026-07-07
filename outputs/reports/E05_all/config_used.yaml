@@ -1,0 +1,184 @@
+project:
+  name: LAB04-DL-2026-01
+  seed: 42
+  device: auto
+generation:
+  seed: 42
+  cae_seed: 42
+  vae_seed: 42
+  gan_seed: 42
+paths:
+  original_utkface_dir: /srv/datasets/imagenes/UTKFace/utkface_aligned_cropped/UTKFace
+  metadata_dir: data/metadata
+  generated_dir: data/generated
+  models_dir: outputs/models
+  reports_dir: outputs/reports
+  metrics_dir: outputs/metrics
+dataset:
+  image_extensions:
+  - .jpg
+  - .jpeg
+  - .png
+  max_images: 0
+preprocessing:
+  image_size:
+  - 128
+  - 128
+  color_space: RGB
+  normalize: true
+age:
+  prediction_mode: regression
+  age_groups:
+  - name: child
+    min_age: 0
+    max_age: 12
+  - name: teen
+    min_age: 13
+    max_age: 19
+  - name: young_adult
+    min_age: 20
+    max_age: 35
+  - name: adult
+    min_age: 36
+    max_age: 55
+  - name: senior
+    min_age: 56
+    max_age: 120
+split:
+  train: 0.7
+  validation: 0.15
+  test: 0.15
+  stratify_by:
+  - age_group
+  - gender
+traditional_augmentation:
+  enabled: true
+  random_horizontal_flip: true
+  random_rotation_degrees: 10
+  color_jitter: true
+  brightness: 0.2
+  contrast: 0.2
+  saturation: 0.2
+  random_affine: true
+  gaussian_blur: false
+cae:
+  latent_dim: 128
+  epochs: 30
+  batch_size: 64
+  learning_rate: 0.001
+  noise_std: 0.1
+  samples_per_group: 500
+vae:
+  latent_dim: 128
+  beta: 1.0
+  epochs: 50
+  batch_size: 64
+  learning_rate: 0.001
+  samples_per_group: 500
+  synthetic_age_label_strategy: group_midpoint
+gan:
+  latent_dim: 100
+  epochs: 100
+  batch_size: 64
+  learning_rate_generator: 0.0002
+  learning_rate_discriminator: 0.0002
+  beta1: 0.5
+  samples_per_group: 500
+  synthetic_age_label_strategy: group_midpoint
+multitask_model:
+  dropout: 0.3
+  hidden_dim: 256
+  gender_output_classes: 2
+  age_output_dim: 1
+losses:
+  lambda_gender: 1.0
+  lambda_age: 1.0
+training:
+  epochs: 30
+  batch_size: 64
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  early_stopping: true
+  patience: 8
+  num_workers: 0
+experiments:
+- name: E00_real_only
+  use_real: true
+  use_traditional_aug: false
+  use_cae: false
+  use_vae: false
+  use_gan: false
+- name: E01_real_traditional
+  use_real: true
+  use_traditional_aug: true
+  use_cae: false
+  use_vae: false
+  use_gan: false
+- name: E02_real_cae
+  use_real: true
+  use_traditional_aug: false
+  use_cae: true
+  use_vae: false
+  use_gan: false
+- name: E03_real_vae
+  use_real: true
+  use_traditional_aug: false
+  use_cae: false
+  use_vae: true
+  use_gan: false
+- name: E04_real_gan
+  use_real: true
+  use_traditional_aug: false
+  use_cae: false
+  use_vae: false
+  use_gan: true
+- name: E05_all
+  use_real: true
+  use_traditional_aug: true
+  use_cae: true
+  use_vae: true
+  use_gan: true
+- name: E06_real_cae_vae
+  use_real: true
+  use_traditional_aug: false
+  use_cae: true
+  use_vae: true
+  use_gan: false
+- name: E07_real_vae_gan
+  use_real: true
+  use_traditional_aug: false
+  use_cae: false
+  use_vae: true
+  use_gan: true
+hyperparameter_sweeps:
+- name: quick_multitask
+  description: Barrido pequeño para estudiar pesos de pérdidas, learning rate y dropout.
+  base_experiment: E00_real_only
+  runs:
+  - name: hp_lambda_age_05
+    overrides:
+      losses:
+        lambda_gender: 1.0
+        lambda_age: 0.5
+  - name: hp_lambda_age_10
+    overrides:
+      losses:
+        lambda_gender: 1.0
+        lambda_age: 1.0
+  - name: hp_lambda_age_20
+    overrides:
+      losses:
+        lambda_gender: 1.0
+        lambda_age: 2.0
+  - name: hp_lr_0005_dropout_02
+    overrides:
+      training:
+        learning_rate: 0.0005
+      multitask_model:
+        dropout: 0.2
+  - name: hp_lr_001_dropout_05
+    overrides:
+      training:
+        learning_rate: 0.001
+      multitask_model:
+        dropout: 0.5
